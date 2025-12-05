@@ -27,6 +27,35 @@ locals {
       enabled_for_template_deployment = settings.enabled_for_template_deployment
       rbac_authorization_enabled      = settings.rbac_authorization_enabled
 
+      ### Network
+
+      # Iterate through network_acls.
+      network_acls = [for index, acl in settings.network_acls : {
+        bypass         = acl.bypass
+        default_action = acl.default_action
+        ip_rules       = acl.ip_rules
+
+        # Iterate through virtual_network_subnets to build out subnet IDs.
+        virtual_network_subnet_ids = [for item in acl.virtual_network_subnets :
+          # If virtual_network_subnet_id is provided, use it directly.
+          item.virtual_network_subnet_id != null ? item.virtual_network_subnet_id : (
+            # Otherwise, if virtual network ID and subnet name are provided, construct the subnet ID.
+            item.virtual_network_id != null && item.virtual_network_subnet_name != null ? format(
+              "%s/subnets/%s",
+              item.virtual_network_id,
+              item.virtual_network_subnet_name
+            ) :
+            # Otherwise, construct the subnet ID from the subscription, virtual network name, resource group name, subnet name.
+            format(
+              "/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
+              data.azurerm_client_config.current.subscription_id,
+              item.virtual_network_resource_group_name,
+              item.virtual_network_name,
+            item.virtual_network_subnet_name)
+          )
+        ]
+      }]
+
       ### Retention
 
       purge_protection_enabled   = settings.purge_protection_enabled

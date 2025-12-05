@@ -41,6 +41,21 @@ variable "key_vaults" {
     enabled_for_template_deployment = optional(bool, false)
     rbac_authorization_enabled      = optional(bool, true)
 
+    ### Network
+
+    network_acls = optional(list(object({
+      bypass         = optional(string, "AzureServices")
+      default_action = optional(string, "Allow")
+      ip_rules       = optional(list(string), [])
+      virtual_network_subnets = optional(list(object({
+        virtual_network_id                  = optional(string, null) # Second priority, if provided will be used with the subnet name.
+        virtual_network_name                = optional(string, null) # Ignored if virtual_network_id or virtual_network_subnet_name is provided.
+        virtual_network_resource_group_name = optional(string, null) # Ignored if virtual_network_id or virtual_network_subnet_name is provided.
+        virtual_network_subnet_id           = optional(string, null) # First priority, if provided will be used.
+        virtual_network_subnet_name         = optional(string, null) # Ignored if virtual_network_subnet_id is provided.
+      })), [])
+    })), [])
+
     ### Retention
 
     purge_protection_enabled   = optional(bool, true)
