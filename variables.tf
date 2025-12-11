@@ -18,6 +18,19 @@ variable "required" {
 
 ### Dependencies
 
+# If data source is taken from child module it can inadvertently cause resource recreation.
+variable "configuration" {
+  description = "Configuration data such as Tenant ID and Subscription ID."
+  nullable    = false
+  type = object({
+    client_id       = string
+    id              = string
+    object_id       = string
+    subscription_id = string
+    tenant_id       = string
+  })
+}
+
 ### Resources
 
 variable "key_vaults" {
@@ -60,5 +73,10 @@ variable "key_vaults" {
 
     purge_protection_enabled   = optional(bool, true)
     soft_delete_retention_days = optional(number, 30)
+
+    ###### Role Assignments
+
+    # This allows role assignments to be assigned as part of this module, since scope is already known.
+    role_assignments = optional(any, [])
   }))
 }

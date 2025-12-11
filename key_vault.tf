@@ -12,9 +12,6 @@ terraform {
 
 ### Data:
 
-# To populate Tenant ID and Subscription ID if not provided.
-data "azurerm_client_config" "current" {}
-
 ### Resources:
 
 resource "azurerm_key_vault" "this" {
@@ -27,7 +24,7 @@ resource "azurerm_key_vault" "this" {
   resource_group_name = each.value.resource_group_name
   sku_name            = each.value.sku_name
   tags                = each.value.tags
-  tenant_id           = coalesce(each.value.tenant_id, data.azurerm_client_config.current.tenant_id) # If tenant_id is not present, use tenant_id from the client.
+  tenant_id           = coalesce(each.value.tenant_id, var.configuration.tenant_id) # If tenant_id is not present, use tenant_id from the client.
 
   ### Access
 
@@ -52,4 +49,18 @@ resource "azurerm_key_vault" "this" {
 
   purge_protection_enabled   = each.value.purge_protection_enabled
   soft_delete_retention_days = each.value.soft_delete_retention_days
+}
+
+##### Role Assignments
+
+module "lupus_az_role_assignment" {
+  source  = "lupusllc/role-assignment/azurerm" # https://registry.terraform.io/modules/lupusllc/storage-account/azurerm/latest
+  version = "0.0.1"
+  for_each = local.role_assignments
+
+  role_assignments = [for role in each.value : merge(role, {
+    scope = azurerm_key_vault.this[each.key].id
+    # Create a unique ID for each role assignment to avoid collisions, we can't use scope since it isn't known a new resource.
+    unique_for_each_id = format("%s>%s>%s", each.key, role.principal_id, coalesce(try(role.role_definition_name, null), try(role.role_definition_id, null)))
+  })]
 }

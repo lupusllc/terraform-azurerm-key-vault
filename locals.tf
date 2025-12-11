@@ -48,7 +48,7 @@ locals {
             # Otherwise, construct the subnet ID from the subscription, virtual network name, resource group name, subnet name.
             format(
               "/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s/subnets/%s",
-              data.azurerm_client_config.current.subscription_id,
+              var.configuration.subscription_id,
               item.virtual_network_resource_group_name,
               item.virtual_network_name,
             item.virtual_network_subnet_name)
@@ -60,11 +60,21 @@ locals {
 
       purge_protection_enabled   = settings.purge_protection_enabled
       soft_delete_retention_days = settings.soft_delete_retention_days
+
+      ###### Role Assignments
+
+      role_assignments = settings.role_assignments
     }
   ]
 
   # Used to create unique id for for_each loops, as just using the name may not be unique.
   key_vaults = {
     for index, settings in local.key_vaults_list : "${settings.resource_group_name}>${settings.name}" => settings
+  }
+
+  # Used to create unique id for for_each loops, as just using the name may not be unique.
+  # Filters out any empty role assignment lists.
+  role_assignments = {
+    for index, settings in local.key_vaults_list : "${settings.resource_group_name}>${settings.name}" => settings.role_assignments if length(settings.role_assignments) > 0
   }
 }
