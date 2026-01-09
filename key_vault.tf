@@ -72,4 +72,4 @@ module "lupus_az_role_assignment" {
   ### Basic
 
   role_assignments = local.role_assignments
-  
+}
