@@ -51,16 +51,25 @@ resource "azurerm_key_vault" "this" {
   soft_delete_retention_days = each.value.soft_delete_retention_days
 }
 
-##### Role Assignments
+###### Sub-resource & Additional Modules
+
+module "lupus_az_monitor_diagnostic_setting" {
+  depends_on = [azurerm_key_vault.this] # Ensures resource group exists before role assignments are created.
+  source  = "lupusllc/monitor-diagnostic-setting/azurerm" # https://registry.terraform.io/modules/lupusllc/monitor-diagnostic-setting/azurerm/latest
+  version = "0.0.1"
+
+  ### Basic
+
+  configuration               = var.configuration
+  monitor_diagnostic_settings = local.monitor_diagnostic_settings
+}
 
 module "lupus_az_role_assignment" {
+  depends_on = [azurerm_key_vault.this] # Ensures resource group exists before role assignments are created.
   source  = "lupusllc/role-assignment/azurerm" # https://registry.terraform.io/modules/lupusllc/storage-account/azurerm/latest
-  version = "0.0.1"
-  for_each = local.role_assignments
+  version = "0.0.3"
 
-  role_assignments = [for role in each.value : merge(role, {
-    scope = azurerm_key_vault.this[each.key].id
-    # Create a unique ID for each role assignment to avoid collisions, we can't use scope since it isn't known a new resource.
-    unique_for_each_id = format("%s>%s>%s", each.key, role.principal_id, coalesce(try(role.role_definition_name, null), try(role.role_definition_id, null)))
-  })]
-}
+  ### Basic
+
+  role_assignments = local.role_assignments
+  
