@@ -56,7 +56,7 @@ resource "azurerm_key_vault" "this" {
 module "lupus_az_monitor_diagnostic_setting" {
   depends_on = [azurerm_key_vault.this] # Ensures resource group exists before role assignments are created.
   source  = "lupusllc/monitor-diagnostic-setting/azurerm" # https://registry.terraform.io/modules/lupusllc/monitor-diagnostic-setting/azurerm/latest
-  version = "0.0.1"
+  version = "0.0.2"
 
   ### Basic
 
